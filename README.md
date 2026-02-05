@@ -19,7 +19,13 @@ Scalable record linkage matching healthcare education programs against license d
 
 **Geocode_HPSA_MUAScript-001.py**  
 - HPSA MUA/MUP spatial enrichment across all 18 professions  
-- HRSA GIS API queries for every geocode (lat/lon → Yes/No)  
-- In-place CSV updates for 15+ profession files  
+- **HRSA ArcGIS layers** - `MedicallyUnderservedAreas_FS` + `MedicallyUnderservedPopulations_FS`  
+- **Adaptable**: Switch layers via `MapServer/0/query` endpoints  
+- In-place CSV updates for 15+ profession files (lat/lon → Yes/No MUA/MUP)  
+
+## 🚀 Features
+- **Production-ready**: Rate limiting, logging, progress bars  
+- **Scalable**: Handles variable file sizes across professions  
+- **In-place updates**: No file duplication/movement needed  
 
 _*Note: Several additional scripts comprise the complete pipeline. All scripts will be published soon.*_
