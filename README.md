@@ -1,20 +1,25 @@
 # Student Data Matching Pipeline
 
-**Healthcare Education Efficacy Analytics**  
-14.3k program records → 157.3k licensure records across 18 professions
+**Production Scale: 10K source records × 150K target records across 18 healthcare professions**
 
-## Production Results
-| Records Matched | Professions | Technologies |
-|------------------|-------------|--------------|
-| 14.3k → 157.3k  | 18          | Python, pandas, fuzzywuzzy, openpyxl |
+**Pipeline Scale:**
+- 10K × 150K record comparisons  
+- 18 healthcare professions
+- Python, pandas, numpy, fuzzywuzzy, openpyxl, requests, tqdm, logging
 
-## Pipeline Overview
-Production fuzzy matching pipeline with Excel automation and data cleansing. 
-Scalable record linkage enabling efficacy analysis across healthcare education programs.
+Scalable record linkage matching healthcare education programs against license data with Excel automation.
 
-*Note: This repository contains the primary matching script. Several additional scripts 
-comprise the complete pipeline. All scripts will be published soon.*
+## Core Pipeline Scripts
 
-## Tech Stack
-```python
-pandas, numpy, fuzzywuzzy, openpyxl
+**Customer_Record_LinkageScript001.py**  
+- Production fuzzy matching engine (10K×150K comparisons)  
+- Weighted scoring: 40% last_name + 30% first_name + 10% middle + 20% token_sort  
+- Vectorized exact matches → fuzzy fallback (threshold 69)  
+- Excel output: fuzzy matches orange highlighted, ID columns yellow  
+
+**Geocode_HPSA_MUAScript-001.py**  
+- HPSA MUA/MUP spatial enrichment across all 18 professions  
+- HRSA GIS API queries for every geocode (lat/lon → Yes/No)  
+- In-place CSV updates for 15+ profession files  
+
+_*Note: Several additional scripts comprise the complete pipeline. All scripts will be published soon.*_
