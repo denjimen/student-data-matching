@@ -1,31 +1,38 @@
 # Student Data Matching Pipeline
 
-**Production Scale: 10K source records × 150K target records across 18 healthcare professions**
+Production Scale: 10K source records x 150K target records across 18 healthcare professions
 
-**Pipeline Scale:**
-- 10K × 150K record comparisons  
-- 18 healthcare professions
-- Python, pandas, numpy, fuzzywuzzy, openpyxl, requests, tqdm, logging
+## Complete Production Pipeline
 
-Scalable record linkage matching healthcare education programs against license data with Excel automation.
+Raw Participant Data --database_record_matcher.py--> Fuzzy Providers
+|
+geocode_hpsa_mua.py + geocode_hpsa_pc_mh_dt.py
+|
+zip_lookup_generator.py --Cached ZIP table--> HPSA/Rural speedup
+|
+hpsa_rural_classifier_001.py --> Salesforce upsert
 
-## Core Pipeline Scripts
+## Core Scripts (5/10 LIVE)
 
-**Customer_Record_LinkageScript001.py**  
-- Production fuzzy matching engine (10K×150K comparisons)  
+**database_record_matcher.py** - LIVE  
+- Production fuzzy matching engine (10Kx150K comparisons in <2 hours)  
 - Weighted scoring: 40% last_name + 30% first_name + 10% middle + 20% token_sort  
 - Vectorized exact matches → fuzzy fallback (threshold 69)  
-- Excel output: fuzzy matches orange highlighted, ID columns yellow  
+- Excel automation: fuzzy matches orange highlighted, Salesforce ID columns yellow  
 
-**Geocode_HPSA_MUAScript-001.py**  
+**geocode_hpsa_mua.py + geocode_hpsa_pc_mh_dt.py** - LIVE  
 - HPSA MUA/MUP spatial enrichment across all 18 professions  
-- **HRSA ArcGIS layers** - `MedicallyUnderservedAreas_FS` + `MedicallyUnderservedPopulations_FS`  
-- **Adaptable**: Switch layers via `MapServer/0/query` endpoints  
-- In-place CSV updates for 15+ profession files (lat/lon → Yes/No MUA/MUP)  
+- HRSA ArcGIS REST layers (`MedicallyUnderservedAreas_FS` + `MedicallyUnderservedPopulations_FS`)  
+- In-place CSV updates: lat/lon coordinates → Yes/No underserved flags  
+- Production rate limiting + error handling for 15+ profession files  
 
-## 🚀 Features
-- **Production-ready**: Rate limiting, logging, progress bars  
-- **Scalable**: Handles variable file sizes across professions  
-- **In-place updates**: No file duplication/movement needed  
+**zip_lookup_generator.py** - NEW  
+- Statewide ZIP coordinate reference table (Nominatim OSM, FREE, no API key)  
+- Input: CountiesWithZipCodes.csv (complete ZIP coverage for single U.S. state)  
+- Output: CountyZipCoordinates.csv (cached lookup accelerates Codes 3+4 by 10x)  
+- OSM compliant: 2-second rate limiting, single-threaded, academic research use  
 
-_*Note: Several additional scripts comprise the complete pipeline. All scripts will be published soon.*_
+**hpsa_rural_classifier_001.py** - LIVE  
+- Final classification combining HPSA/MUA/PC + Rural status across all datasets  
+- Comprehensive underserved area flags for Salesforce integration  
+- Preserves Salesforce ID column end-to-end for production upsert   
