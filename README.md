@@ -15,6 +15,7 @@ This pipeline is designed so that each step builds on the previous one: files ac
 
 ## Complete Production Pipeline
 
+```text
 Raw Participant Data --database_record_matcher.py--> Fuzzy Providers
                       |
 zip_lookup_generator.py --CountyZipCoordinates.csv--> update_coords_from_zip_lookup.py
@@ -26,6 +27,7 @@ zip_lookup_generator.py --CountyZipCoordinates.csv--> update_coords_from_zip_loo
    geocode_hpsa_mua.py + geocode_hpsa_pc_mh_dt.py (HPSA/MUA tags)
                       |
                  Salesforce upsert
+```
 
 > Note: An optional Google-based full-address geocoder is included for experimentation,  
 > but the production pipeline relies on free/open geocoding (Nominatim + ZIP table).
