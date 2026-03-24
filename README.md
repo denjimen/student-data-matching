@@ -4,6 +4,15 @@ Production scale: 10K source records × 150K target records across 18 healthcare
 
 Scalable record linkage matching education program data against state license data, with rural/HPSA spatial enrichment and outputs ready for Salesforce (or other) upsert.
 
+## Upstream Data Preparation
+
+This pipeline is designed so that each step builds on the previous one: files accumulate more fields as they move through matching, address enrichment, geocoding, and finally rural/HPSA tagging.
+
+- First, `database_record_matcher.py` links raw program (or Salesforce) participant data to PLA license records, producing MatchedData_*.csv files with IDs and match scores but no practice addresses yet.  
+- A separate address-join step (script or manual) then merges practice address columns from a unified address table into each profession’s matched file, keyed by shared IDs such as Salesforce ID and PLA license number.  
+- The geocoding and rural/HPSA scripts in this repo assume you start from those address-enriched MatchedCombinedData_*.csv files and then add coordinates and shortage-area flags in successive stages.  
+- The address-join step can also be done manually in Excel by matching the unified address table to the matched data on Salesforce ID (and/or PLA license number) and saving the result as MatchedCombinedData_*.csv.
+
 ## Complete Production Pipeline
 
 Raw Participant Data --database_record_matcher.py--> Fuzzy Providers
