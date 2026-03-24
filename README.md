@@ -1,6 +1,6 @@
 # Student Data Matching Pipeline
 
-Production scale: 10K source records × 150K target records across 18 healthcare professions
+Production scale: 14.3K source records × 157.3K target records across 18 healthcare professions
 
 Scalable record linkage matching education program data against state license data, with rural/HPSA spatial enrichment and outputs ready for Salesforce (or other) upsert.
 
