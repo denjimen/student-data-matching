@@ -1,38 +1,61 @@
 # Student Data Matching Pipeline
 
-Production Scale: 10K source records x 150K target records across 18 healthcare professions
+Production scale: 10K source records × 150K target records across 18 healthcare professions
+
+Scalable record linkage matching education program data against state license data, with rural/HPSA spatial enrichment and outputs ready for Salesforce (or other) upsert.
 
 ## Complete Production Pipeline
 
 Raw Participant Data --database_record_matcher.py--> Fuzzy Providers
-|
-geocode_hpsa_mua.py + geocode_hpsa_pc_mh_dt.py
-|
-zip_lookup_generator.py --Cached ZIP table--> HPSA/Rural speedup
-|
-hpsa_rural_classifier_001.py --> Salesforce upsert
+                      |
+zip_lookup_generator.py --CountyZipCoordinates.csv--> update_coords_from_zip_lookup.py
+                      |
+   geocode_in_county_centers.py (county centroid fallback)
+                      |
+      hpsa_rural_classifier_001.py (RHIhub “Am I Rural?”)
+                      |
+   geocode_hpsa_mua.py + geocode_hpsa_pc_mh_dt.py (HPSA/MUA tags)
+                      |
+                 Salesforce upsert
 
-## Core Scripts (5/10 LIVE)
+> Note: An optional Google-based full-address geocoder is included for experimentation,  
+> but the production pipeline relies on free/open geocoding (Nominatim + ZIP table).
 
-**database_record_matcher.py** - LIVE  
-- Production fuzzy matching engine (10Kx150K comparisons in <2 hours)  
-- Weighted scoring: 40% last_name + 30% first_name + 10% middle + 20% token_sort  
-- Vectorized exact matches → fuzzy fallback (threshold 69)  
-- Excel automation: fuzzy matches orange highlighted, Salesforce ID columns yellow  
+## Core Scripts (7 production + 1 optional)
 
-**geocode_hpsa_mua.py + geocode_hpsa_pc_mh_dt.py** - LIVE  
-- HPSA MUA/MUP spatial enrichment across all 18 professions  
-- HRSA ArcGIS REST layers (`MedicallyUnderservedAreas_FS` + `MedicallyUnderservedPopulations_FS`)  
-- In-place CSV updates: lat/lon coordinates → Yes/No underserved flags  
-- Production rate limiting + error handling for 15+ profession files  
+**database_record_matcher.py**  
+- Production fuzzy matching engine (10K×150K comparisons in under two hours)  
+- Weighted scoring: 40% last_name, 30% first_name, 10% middle, 20% token_sort  
+- Vectorized exact matches with fuzzy fallback (threshold 69)  
+- Excel automation for manual review (fuzzy rows and ID columns highlighted)
 
-**zip_lookup_generator.py** - NEW  
-- Statewide ZIP coordinate reference table (Nominatim OSM, FREE, no API key)  
-- Input: CountiesWithZipCodes.csv (complete ZIP coverage for single U.S. state)  
-- Output: CountyZipCoordinates.csv (cached lookup accelerates Codes 3+4 by 10x)  
-- OSM compliant: 2-second rate limiting, single-threaded, academic research use  
+**zip_lookup_generator.py**  
+- Builds a statewide ZIP→Lat/Lon reference table using Nominatim / OpenStreetMap (no API key, free)  
+- Input: CountiesWithZipCodes.csv (complete ZIP coverage for a single U.S. state)  
+- Output: CountyZipCoordinates.csv used to pre-populate coordinates before external classification steps  
+- OSM-compliant: conservative rate limiting, single-threaded, academic research use
 
-**hpsa_rural_classifier_001.py** - LIVE  
-- Final classification combining HPSA/MUA/PC + Rural status across all datasets  
-- Comprehensive underserved area flags for Salesforce integration  
-- Preserves Salesforce ID column end-to-end for production upsert   
+**update_coords_from_zip_lookup.py**  
+- Reads CountyZipCoordinates.csv and merges ZIP-level Latitude/Longitude into existing profession CSVs  
+- Overwrites missing or less precise coordinates with ZIP-based values when available  
+- Writes out updated CSVs so downstream scripts see improved coordinates by default
+
+**geocode_in_county_centers.py**  
+- Final geocoding fallback for records still missing coordinates after ZIP lookup  
+- Uses geographic centroids of counties (county centers), not county seats, as a conservative approximation  
+- Ensures every record can still be evaluated for rural and HPSA/MUA status at least at the county level
+
+**hpsa_rural_classifier_001.py**  
+- Calls the Rural Health Information Hub “Am I Rural?” service to classify locations as rural / non-rural under federal definitions  
+- Writes rural status back into each profession CSV so it is available for later HPSA/MUA tagging  
+- Preserves ID columns end-to-end to support reliable upsert into Salesforce or other systems
+
+**geocode_hpsa_mua.py + geocode_hpsa_pc_mh_dt.py**  
+- Adds HPSA and MUA/MUP attributes to geocoded, rural-classified records across all 18 professions  
+- Uses HRSA ArcGIS REST services such as `MedicallyUnderservedAreas_FS` and related HPSA layers to attach shortage-area fields to each row  
+- Designed for production: handles 15+ profession files with rate limiting and error handling
+
+**google_geocode_full_addresses.py**  *(optional, paid API)*  
+- One-pass helper that uses the Google Maps Geocoding API to resolve full practice addresses, falling back to county or ZIP as needed  
+- Produces AddressProcessed files with Latitude/Longitude for high-precision use cases  
+- Requires a billable Google Maps project and an API key stored in `GeocodeAPI.env`; not used in the default free/open pipeline
