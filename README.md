@@ -65,6 +65,8 @@ zip_lookup_generator.py --CountyZipCoordinates.csv--> update_coords_from_zip_loo
 - Adds HPSA and MUA/MUP attributes to geocoded, rural-classified records across all 18 professions  
 - Uses HRSA ArcGIS REST services such as `MedicallyUnderservedAreas_FS` and related HPSA layers to attach shortage-area fields to each row  
 - Designed for production: handles 15+ profession files with rate limiting and error handling
+- Uses HRSA ArcGIS REST services (MedicallyUnderservedAreas_FS and MedicallyUnderservedPopulations_FS) to tag each geocoded record with MUA/MUP status, with built-in rate limiting and error handling.
+- Validates coordinates against the Indiana bounding box before classification, writing NaN for invalid or out-of-state points so bad geocodes do not get mis-labeled as non–MUA/MUP.
 
 **google_geocode_full_addresses.py**  *(optional, paid API)*  
 - One-pass helper that uses the Google Maps Geocoding API to resolve full practice addresses, falling back to county or ZIP as needed  
